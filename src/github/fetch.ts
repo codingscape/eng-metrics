@@ -2,9 +2,17 @@ import { GitHubClient } from './client.js';
 import { PullRequest, Review, Commit } from './types.js';
 
 export async function listOrgRepos(gh: GitHubClient, org: string): Promise<string[]> {
-  // Note: paginate to 1000 repos max (good enough for v1; can extend later)
-  const repos: { name: string }[] = gh.apiJson(`/orgs/${org}/repos?per_page=100&type=all`);
+  // Note: first page only for v1; can add pagination later.
+  const repos: { name: string }[] = gh.apiJson(`/orgs/${org}/repos?per_page=100&type=all&sort=full_name`);
   return repos.map((r) => r.name);
+}
+
+export async function getUserProfile(gh: GitHubClient, login: string): Promise<{ login: string; name: string | null } | null> {
+  try {
+    return gh.apiJson(`/users/${login}`);
+  } catch {
+    return null;
+  }
 }
 
 export async function searchPullRequests(

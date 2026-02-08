@@ -1,7 +1,15 @@
 export async function listOrgRepos(gh, org) {
-    // Note: paginate to 1000 repos max (good enough for v1; can extend later)
-    const repos = gh.apiJson(`/orgs/${org}/repos?per_page=100&type=all`);
+    // Note: first page only for v1; can add pagination later.
+    const repos = gh.apiJson(`/orgs/${org}/repos?per_page=100&type=all&sort=full_name`);
     return repos.map((r) => r.name);
+}
+export async function getUserProfile(gh, login) {
+    try {
+        return gh.apiJson(`/users/${login}`);
+    }
+    catch {
+        return null;
+    }
 }
 export async function searchPullRequests(gh, org, startIso, endIso) {
     // Use GitHub Search API via gh. We query org-wide PRs updated in range.

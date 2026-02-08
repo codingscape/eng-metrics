@@ -1,4 +1,10 @@
-export function renderMarkdown(client, org, metrics) {
+function formatPerson(login, displayNameByLogin) {
+    const display = displayNameByLogin[login];
+    if (display && display.trim() && display !== login)
+        return `${display} (${login})`;
+    return login;
+}
+export function renderMarkdown(client, org, metrics, displayNameByLogin = {}) {
     const lines = [];
     lines.push(`# Weekly engineering metrics (${client})`);
     lines.push('');
@@ -15,7 +21,7 @@ export function renderMarkdown(client, org, metrics) {
     lines.push('');
     const authors = Object.entries(metrics.byAuthor).sort((a, b) => b[1].prsMerged - a[1].prsMerged);
     for (const [author, m] of authors) {
-        lines.push(`### ${author}`);
+        lines.push(`### ${formatPerson(author, displayNameByLogin)}`);
         lines.push('');
         lines.push(`- PRs opened: **${m.prsOpened}**`);
         lines.push(`- PRs merged: **${m.prsMerged}**`);

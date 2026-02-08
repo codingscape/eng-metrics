@@ -1,6 +1,17 @@
 import { WeeklyMetrics } from './metrics.js';
 
-export function renderMarkdown(client: string, org: string, metrics: WeeklyMetrics) {
+function formatPerson(login: string, displayNameByLogin: Record<string, string>) {
+  const display = displayNameByLogin[login];
+  if (display && display.trim() && display !== login) return `${display} (${login})`;
+  return login;
+}
+
+export function renderMarkdown(
+  client: string,
+  org: string,
+  metrics: WeeklyMetrics,
+  displayNameByLogin: Record<string, string> = {},
+) {
   const lines: string[] = [];
   lines.push(`# Weekly engineering metrics (${client})`);
   lines.push('');
@@ -20,7 +31,7 @@ export function renderMarkdown(client: string, org: string, metrics: WeeklyMetri
 
   const authors = Object.entries(metrics.byAuthor).sort((a, b) => b[1].prsMerged - a[1].prsMerged);
   for (const [author, m] of authors) {
-    lines.push(`### ${author}`);
+    lines.push(`### ${formatPerson(author, displayNameByLogin)}`);
     lines.push('');
     lines.push(`- PRs opened: **${m.prsOpened}**`);
     lines.push(`- PRs merged: **${m.prsMerged}**`);

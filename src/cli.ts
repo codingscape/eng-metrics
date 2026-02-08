@@ -18,12 +18,17 @@ program
   .option('--org <org>', 'GitHub org (optional; can be set later)')
   .option('--auth <mode>', 'Auth mode: gh | token', 'gh')
   .option('--token-env <name>', 'If auth=token: environment variable name to read token from', 'GITHUB_TOKEN')
+  .option(
+    '--repos <mode>',
+    'Repo selection: all | select (interactive). If omitted, will prompt when possible.',
+  )
   .action(async (opts) => {
     await initClient({
       client: opts.client,
       org: opts.org,
       auth: opts.auth,
       tokenEnv: opts.tokenEnv,
+      repos: opts.repos,
     });
   });
 
@@ -34,12 +39,14 @@ program
   .option('--org <org>', 'GitHub org')
   .option('--auth <mode>', 'Auth mode: gh | token')
   .option('--token-env <name>', 'If auth=token: environment variable name to read token from')
+  .option('--repos <mode>', 'Repo selection: all | select (interactive)')
   .action(async (opts) => {
     await reinitClient({
       client: opts.client,
       org: opts.org,
       auth: opts.auth,
       tokenEnv: opts.tokenEnv,
+      repos: opts.repos,
     });
   });
 
