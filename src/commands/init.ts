@@ -4,8 +4,8 @@ import prompts from 'prompts';
 import { saveConfig, loadConfig } from '../config.js';
 import { clientDir, ensureDir } from '../paths.js';
 import { ClientConfigSchema } from '../types.js';
-import { GitHubClient } from '../github/client.js';
-import { listOrgRepos } from '../github/fetch.js';
+import { connectGithubMcp } from '../mcp/github/client.js';
+import { listOrgRepositories } from '../mcp/github/repos.js';
 
 type InitArgs = {
   client: string;
@@ -33,8 +33,18 @@ async function chooseReposIfPossible(cfg: any, preferred?: string) {
 
   // If we don't have gh auth configured yet, this may fail; we treat it as optional.
   try {
-    const gh = new GitHubClient(cfg);
-    const repos = await listOrgRepos(gh, org);
+    const tokenEnv = cfg.github.auth.tokenEnv ?? 'GITHUB_PERSONAL_ACCESS_TOKEN';
+    const token = process.env[tokenEnv];
+    if (!token) throw new Error(`Missing GitHub token env var: ${tokenEnv}`);
+
+    const mcp = await connectGithubMcp({
+      readOnly: true,
+      toolsets: 'default',
+      env: { ...process.env, GITHUB_PERSONAL_ACCESS_TOKEN: token } as Record<string, string>,
+    });
+
+    const repos = await listOrgRepositories(mcp as any, org);
+    await mcp.close();
 
     const { repoMode } =
       pref === 'select'
