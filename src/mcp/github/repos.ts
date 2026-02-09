@@ -36,3 +36,11 @@ export async function listOrgRepositories(mcp: Client, org: string): Promise<str
   const { items } = await searchRepositories(mcp, q, { perPage: 100, page: 1, sort: 'updated', order: 'desc' });
   return (items ?? []).map((r) => r.name).filter(Boolean);
 }
+
+export async function listUserRepositories(mcp: Client, username: string): Promise<string[]> {
+  // Search for repos owned by the user (includes both user repos and org repos they own)
+  const q = `user:${username} archived:false`; 
+  const { items } = await searchRepositories(mcp, q, { perPage: 100, page: 1, sort: 'updated', order: 'desc' });
+  // Return full names (owner/repo) for repos without org
+  return (items ?? []).map((r) => r.full_name || `${username}/${r.name}`).filter(Boolean);
+}

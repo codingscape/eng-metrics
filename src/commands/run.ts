@@ -26,10 +26,53 @@ type RunArgs = {
   outDir?: string;
 };
 
+function buildSearchQuery(
+  org: string | undefined,
+  repos: { mode: 'all' | 'allowlist'; allowlist: string[] },
+  startIso: string,
+  endIso: string,
+): string {
+  const timeRange = `updated:${startIso}..${endIso}`;
+  
+  if (org) {
+    // Org-based search: use org filter
+    return `org:${org} is:pr ${timeRange}`;
+  }
+  
+  // No org: must have specific repos in allowlist
+  if (repos.mode === 'allowlist' && repos.allowlist.length > 0) {
+    // Check if repos are in "owner/repo" format or just "repo" format
+    const repoQueries = repos.allowlist.map((repo) => {
+      if (repo.includes('/')) {
+        // Full format: "owner/repo"
+        return `repo:${repo}`;
+      } else {
+        // Just repo name - can't search without owner, so skip
+        return null;
+      }
+    }).filter((q): q is string => q !== null);
+    
+    if (repoQueries.length === 0) {
+      throw new Error(
+        `Cannot search without org: repos in allowlist must be in "owner/repo" format (e.g., "gdiab/my-repo"). ` +
+        `Found: ${repos.allowlist.join(', ')}`
+      );
+    }
+    
+    return `${repoQueries.join(' ')} is:pr ${timeRange}`;
+  }
+  
+  // No org and no specific repos: can't proceed
+  throw new Error(
+    `Missing github.org in client config and no repos specified. ` +
+    `Either set org with: reinit --client <client> --org <org>, ` +
+    `or specify repos in "owner/repo" format.`
+  );
+}
+
 export async function runReport(args: RunArgs) {
   const cfg = loadConfig(args.client);
   const org = cfg.github.org;
-  if (!org) throw new Error(`Missing github.org in client config. Run: eng-metrics reinit --client ${args.client} --org <org>`);
 
   const endIso = args.endIso ?? isoNow();
   const startIso = subtractDays(endIso, args.days);
@@ -57,16 +100,27 @@ export async function runReport(args: RunArgs) {
     env: { ...process.env, GITHUB_PERSONAL_ACCESS_TOKEN: token } as Record<string, string>,
   });
 
-  console.log(`[${args.client}] Fetching PRs via MCP for org=${org} window=${startIso}..${endIso}`);
-  const q = `org:${org} is:pr updated:${startIso}..${endIso}`;
+  const q = buildSearchQuery(org, cfg.github.repos, startIso, endIso);
+  const searchScope = org ? `org=${org}` : `repos=${cfg.github.repos.allowlist.join(',')}`;
+  console.log(`[${args.client}] Fetching PRs via MCP for ${searchScope} window=${startIso}..${endIso}`);
+  
   const search = await mcpSearchPRs(mcp as any, q, { perPage: 100, page: 1, sort: 'updated', order: 'desc' });
   const items: any[] = search.items ?? [];
 
+  // Filter by allowlist if needed (when org is present and using allowlist mode)
   const wanted = items.filter((it) => {
     const m = String(it.html_url ?? '').match(/github\.com\/(.+?)\/(.+?)\/pull\/(\d+)/);
     if (!m) return false;
-    const repoName = m[2];
-    return cfg.github.repos.mode === 'allowlist' ? cfg.github.repos.allowlist.includes(repoName) : true;
+    
+    if (org && cfg.github.repos.mode === 'allowlist') {
+      // With org: filter by repo name only
+      const repoName = m[2];
+      return cfg.github.repos.allowlist.includes(repoName);
+    }
+    
+    // Without org: repos are already filtered by the search query
+    // Or with org + "all" mode: include everything
+    return true;
   });
 
   console.log(`[${args.client}] Enriching ${wanted.length} PRs via MCP (details + reviews)`);
@@ -123,7 +177,7 @@ export async function runReport(args: RunArgs) {
   // (We can optionally extend this later by resolving names via MCP if needed.)
   const displayNameByLogin: Record<string, string> = { ...cfg.github.people.displayNameByLogin };
 
-  const md = renderMarkdown(args.client, org, metrics, displayNameByLogin);
+  const md = renderMarkdown(args.client, org ?? 'multiple repos', metrics, displayNameByLogin);
 
   const mdPath = path.join(outDir, 'weekly-metrics.md');
   const jsonPath = path.join(outDir, 'weekly-metrics.json');

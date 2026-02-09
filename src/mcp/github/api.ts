@@ -50,3 +50,11 @@ export async function userGet(mcp: Client, login: string) {
   })) as McpToolResult;
   return parseFirstJson<any>(res);
 }
+
+export async function getCurrentUser(mcp: Client) {
+  const res = (await mcp.callTool({
+    name: 'get_me',
+    arguments: {},
+  })) as McpToolResult;
+  return parseFirstJson<any>(res);
+}

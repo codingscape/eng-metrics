@@ -38,3 +38,10 @@ export async function userGet(mcp, login) {
     }));
     return parseFirstJson(res);
 }
+export async function getCurrentUser(mcp) {
+    const res = (await mcp.callTool({
+        name: 'get_me',
+        arguments: {},
+    }));
+    return parseFirstJson(res);
+}
