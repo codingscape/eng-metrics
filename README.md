@@ -9,5 +9,9 @@ A multi-client, config-driven CLI that pulls GitHub activity and generates weekl
 - Output: Markdown report + JSON metrics
 - Persist raw data so you can later generate last-month / last-quarter views
 
+## Quickstart
+
+- TLs: see `docs/TL_QUICKSTART.md`
+
 ## Status
-WIP — initial GitHub-only implementation in progress.
+WIP — GitHub-only implementation is working; MCP-backed read-only mode is the default.
