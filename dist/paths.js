@@ -6,6 +6,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 export const repoRoot = path.resolve(__dirname, '..');
 export function clientsDir() {
+    const override = process.env.ENG_METRICS_CLIENTS_DIR;
+    if (override && override.trim())
+        return override;
     return path.join(repoRoot, 'clients');
 }
 export function clientDir(client) {

@@ -8,7 +8,7 @@ function median(nums) {
     const mid = Math.floor(sorted.length / 2);
     return sorted.length % 2 === 0 ? (sorted[mid - 1] + sorted[mid]) / 2 : sorted[mid];
 }
-export function computeWeeklyMetrics(items, window) {
+export function computeReportMetrics(items, window) {
     const startMs = Date.parse(window.start);
     const endMs = Date.parse(window.end);
     const byAuthor = {};
@@ -64,4 +64,10 @@ export function computeWeeklyMetrics(items, window) {
         totals: { prsOpened, prsMerged, prsClosedUnmerged },
         byAuthor,
     };
+}
+export function computeWeeklyMetrics(items, window) {
+    return computeReportMetrics(items, {
+        ...window,
+        period: window.period ?? 'weekly',
+    });
 }
